@@ -16,7 +16,7 @@ GameScene::GameScene(size_t m, size_t n) :
 	initFigures();
 
 	generateFigure();
-	field[0][3].isFilled = true;
+	field[5][1].isFilled = true;
 }
 
 GameScene::~GameScene() {
@@ -81,6 +81,65 @@ void GameScene::generateFigure() {
 	figure.texture = 0;
 }
 
+bool GameScene::thereIsBarrier(Direction dir) {
+	switch (dir) {
+		case Direction::LEFT:
+			if (figure.x == 0)
+				return true;
+			for (size_t i = 0; i < figure.height; i++) {
+				size_t j = 0;
+				while (!figure.points[i][j].isFilled)
+					j++;
+				if (field[figure.y + i][figure.x + j - 1].isFilled)
+					return true;
+			}
+			return false;
+		case Direction::RIGHT:
+			if (figure.x + figure.width == fieldColumns)
+				return true;
+			for (size_t i = 0; i < figure.height; i++) {
+				size_t j = figure.width - 1;
+				while (!figure.points[i][j].isFilled)
+					j--;
+				if (field[figure.y + i][figure.x + j + 1].isFilled)
+					return true;
+			}
+			return false;
+		case Direction::DOWN:
+			if (figure.y + figure.height == fieldLines)
+				return true;
+			for (size_t j = 0; j < figure.width; j++) {
+				size_t i = figure.height - 1;
+				while (!figure.points[i][j].isFilled)
+					i--;
+				if (field[figure.y + i + 1][figure.x + j].isFilled)
+					return true;
+			}
+			return false;
+	}
+	return true;
+}
+
+void GameScene::moveFigure(Direction dir) {
+	switch (dir) {
+		case Direction::LEFT:
+			if (!thereIsBarrier(dir))
+				figure.x--;
+			break;
+		case Direction::RIGHT:
+			if (!thereIsBarrier(dir))
+				figure.x++;
+			break;
+		case Direction::DOWN:
+			if (!thereIsBarrier(dir))
+				figure.y++;
+			else {
+
+			}
+			break;
+	}
+}
+
 Rectangle GameScene::getScoreWindowPlace(const sf::Vector2u &wndSize) {
 	Rectangle ret;
 	ret.x = 0;
@@ -141,19 +200,22 @@ bool GameScene::isOver() {
 }
 
 void GameScene::handleKey(sf::Event::KeyEvent event) {
-	printDebugInfo();
 	switch (event.code) {
 		case sf::Keyboard::Key::Up:
 			break;
 		case sf::Keyboard::Key::Down:
+			moveFigure(Direction::DOWN);
 			break;
 		case sf::Keyboard::Key::Right:
+			moveFigure(Direction::RIGHT);
 			break;
 		case sf::Keyboard::Key::Left:
+			moveFigure(Direction::LEFT);
 			break;
 		default:
 			break;
 	}
+	printDebugInfo();
 }
 
 void GameScene::update() {
