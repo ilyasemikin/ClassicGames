@@ -16,7 +16,7 @@ Game::~Game() {
 }
 
 void Game::initScenes() {
-	scenes.push(std::make_unique<GameScene>(10, 5));
+	scenes.push(std::make_unique<GameScene>(15, 7));
 }
 
 void Game::updateDeltaTime() {

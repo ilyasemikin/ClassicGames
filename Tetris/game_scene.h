@@ -45,6 +45,9 @@ private:
 	void generateFigure();
 	bool thereIsBarrier(Direction dir);
 	void moveFigure(Direction dir);
+	void fixFigure();
+	
+	void clearFieldLines();
 
 	Rectangle getScoreWindowPlace(const sf::Vector2u &wndSize);
 	Rectangle getGameWindowPlace(const sf::Vector2u &wndSize);

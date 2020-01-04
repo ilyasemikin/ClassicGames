@@ -1,4 +1,6 @@
 #include <iostream>
+#include <algorithm>
+#include <list>
 #include "png_image.h"
 #include "game_scene.h"
 
@@ -16,7 +18,6 @@ GameScene::GameScene(size_t m, size_t n) :
 	initFigures();
 
 	generateFigure();
-	field[5][1].isFilled = true;
 }
 
 GameScene::~GameScene() {
@@ -134,9 +135,41 @@ void GameScene::moveFigure(Direction dir) {
 			if (!thereIsBarrier(dir))
 				figure.y++;
 			else {
-
+				fixFigure();
+				clearFieldLines();
+				generateFigure();
 			}
 			break;
+	}
+}
+
+void GameScene::fixFigure() {
+	for (size_t i = 0; i < figure.height; i++)
+		for (size_t j = 0; j < figure.width; j++) {
+			auto jField { figure.x + j };
+			auto iField { figure.y + i };
+			if (figure.points[i][j].isFilled) {
+				field[iField][jField].isFilled = true;
+				field[iField][jField].texture = 2;
+			}
+		}
+}
+
+void GameScene::clearFieldLines() {
+	auto pred { [](PointState x) { return x.isFilled; } };
+	std::list<size_t> deleted;
+	for (size_t i = 0; i < fieldLines; i++) {
+		auto isCompletelyFilled { std::all_of(field[i].begin(), field[i].end(), pred) };
+		if (isCompletelyFilled) {
+			deleted.push_back(i);
+			std::fill(field[i].begin(), field[i].end(), PointState());
+		}
+	}
+
+	for (auto &line : deleted) {
+		for (size_t i = line; i > 0; i--)
+			field[i] = field[i - 1];
+		std::fill(field[0].begin(), field[0].end(), PointState());
 	}
 }
 
@@ -204,7 +237,6 @@ void GameScene::handleKey(sf::Event::KeyEvent event) {
 		case sf::Keyboard::Key::Up:
 			break;
 		case sf::Keyboard::Key::Down:
-			moveFigure(Direction::DOWN);
 			break;
 		case sf::Keyboard::Key::Right:
 			moveFigure(Direction::RIGHT);
@@ -219,7 +251,12 @@ void GameScene::handleKey(sf::Event::KeyEvent event) {
 }
 
 void GameScene::update() {
-
+	static sf::Clock deltaClock;
+	const float latency = 0.2;
+	if (deltaClock.getElapsedTime().asSeconds() > latency) {
+		moveFigure(Direction::DOWN);
+		deltaClock.restart();
+	}
 }
 
 void GameScene::display(sf::RenderWindow &target) {
