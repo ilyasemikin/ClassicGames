@@ -7,12 +7,16 @@ GameScene::GameScene(size_t m, size_t n) :
 	scoreFontPath("Fonts/Roboto-Black.ttf"),
 	fieldLines(m),
 	fieldColumns(n),
-	field(m, std::vector<Point>(n, Point())),
+	field(m, std::vector<PointState>(n, PointState())),
 	scorePart(0.05),
 	isSceneOver(false)
 {
 	initTextures();
 	initFonts();
+	initFigures();
+
+	generateFigure();
+	field[0][3].isFilled = true;
 }
 
 GameScene::~GameScene() {
@@ -59,6 +63,24 @@ void GameScene::initFonts() {
 	}
 }
 
+void GameScene::initFigures() {
+	figures.push_back(
+		{ 
+			{ 0, 1, 0 },
+			{ 1, 1, 1 }
+		}
+	);
+}
+
+void GameScene::generateFigure() {
+	figure.points = figures[0];
+	figure.x = 0;
+	figure.y = 0;
+	figure.width = figure.points[0].size();
+	figure.height = figure.points.size();
+	figure.texture = 0;
+}
+
 Rectangle GameScene::getScoreWindowPlace(const sf::Vector2u &wndSize) {
 	Rectangle ret;
 	ret.x = 0;
@@ -90,11 +112,36 @@ float GameScene::getBlockSize(const Rectangle &wndPlace) {
 		return static_cast<float>(wndPlace.width) / fieldColumns;
 }
 
+void GameScene::printDebugInfo() {
+	std::cout << "Field:" << std::endl;
+	std::cout << "Count lines = " << fieldLines << "; count columns = " << fieldColumns << std::endl;
+	for (size_t i = 0; i < fieldLines; i++) {
+		for (size_t j = 0; j < fieldColumns; j++) {
+			if (figure.x <= j && j < figure.x + figure.width &&
+			    figure.y <= i && i < figure.y + figure.height &&
+			    figure.points[i - figure.y][j - figure.x].isFilled)
+				std::cout << 'F';
+			else
+				std::cout << field[i][j].isFilled;
+		}
+		std::cout << std::endl;
+	}
+	std::cout << "Figure:" << std::endl;
+	std::cout << "X = " << figure.x << "; y = " << figure.y << std::endl;
+	std::cout << "Width = " << figure.width << "; height = " << figure.height << std::endl;
+	for (size_t i = 0; i < figure.height; i++) {
+		for (size_t j = 0; j < figure.width; j++)
+			std::cout << figure.points[i][j].isFilled;
+		std::cout << std::endl;
+	}
+}
+
 bool GameScene::isOver() {
 	return isSceneOver;
 }
 
 void GameScene::handleKey(sf::Event::KeyEvent event) {
+	printDebugInfo();
 	switch (event.code) {
 		case sf::Keyboard::Key::Up:
 			break;
@@ -130,6 +177,18 @@ void GameScene::display(sf::RenderWindow &target) {
 	auto blockScale { blockSize / blockTextureSize };
 	sf::Sprite sprite;
 	sprite.setScale(blockScale, blockScale);
+
+	for (size_t i = 0; i < figure.height; i++)
+		for (size_t j = 0; j < figure.width; j++)
+			if (figure.points[i][j].isFilled) {
+				sprite.setPosition(
+					gameWndPlace.x + (figure.x + j) * blockSize,
+					gameWndPlace.y + (figure.y + i) * blockSize
+				);
+				sprite.setTexture(blockTextures[figure.texture]);
+				target.draw(sprite);
+			}
+
 	for (size_t i = 0; i < fieldLines; i++)
 		for (size_t j = 0; j < fieldColumns; j++)
 			if (field[i][j].isFilled) {

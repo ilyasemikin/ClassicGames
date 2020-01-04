@@ -31,7 +31,7 @@ void Game::updateSFEvent() {
 				break;
 			case sf::Event::KeyPressed:
 				if (!scenes.empty())
-						
+					scenes.top()->handleKey(sfEvent.key);
 				break;
 			default:
 				break;
