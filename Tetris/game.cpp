@@ -1,8 +1,15 @@
+#include <sstream>
+#include "config_parser.h"
 #include "game_scene.h"
 #include "game.h"
 
 Game::Game() : Game(sf::VideoMode(800, 600), "window") {
 
+}
+
+Game::Game(const std::string &configFile) {
+	initScenes();
+	initWindowByFile(configFile);
 }
 
 Game::Game(sf::VideoMode vm, std::string title) : 
@@ -13,6 +20,22 @@ Game::Game(sf::VideoMode vm, std::string title) :
 
 Game::~Game() {
 
+}
+
+void Game::initWindowByFile(const std::string &path) {
+	auto params {
+		Config::getListParams(path, { "Width", "Height", "Title" })
+	};
+	size_t width, height;
+	std::stringstream str;
+	str << params["Width"];
+	str >> width;
+	str.clear();
+
+	str << params["Height"];
+	str >> height;
+
+	window.create(sf::VideoMode(width, height, sf::Style::Close | sf::Style::Titlebar), params["Title"]);
 }
 
 void Game::initScenes() {
@@ -29,6 +52,12 @@ void Game::updateSFEvent() {
 			case sf::Event::Closed:
 				window.close();
 				break;
+			case sf::Event::Resized:
+			{
+				sf::FloatRect visibleArea(0, 0, sfEvent.size.width, sfEvent.size.height);
+				window.setView(sf::View(visibleArea));
+				break;
+			}
 			case sf::Event::KeyPressed:
 				if (!scenes.empty())
 					scenes.top()->handleKey(sfEvent.key);

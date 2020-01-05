@@ -6,11 +6,13 @@
 
 GameScene::GameScene(size_t m, size_t n) : 
 	blockTexturePath("Textures/blocks.png"),
+	backTexturePath("Textures/back.png"),
 	scoreFontPath("Fonts/Roboto-Black.ttf"),
 	fieldLines(m),
 	fieldColumns(n),
 	field(m, std::vector<PointState>(n, PointState())),
 	generator(rd()),
+	score(0),
 	scorePart(0.05),
 	isSceneOver(false)
 {
@@ -56,6 +58,14 @@ void GameScene::initTextures() {
 			throw "";
 		}
 	}
+
+	textureSize = PNGImage::getSize(backTexturePath);
+
+	if (textureSize.width == 0 || textureSize.height == 0)
+		throw "";
+
+	backTextureSize = textureSize.height;
+	backTexture.loadFromFile(backTexturePath);
 }
 
 void GameScene::initFonts() {
@@ -192,6 +202,7 @@ void GameScene::clearFieldLines() {
 	for (size_t i = 0; i < fieldLines; i++) {
 		auto isCompletelyFilled { std::all_of(field[i].begin(), field[i].end(), pred) };
 		if (isCompletelyFilled) {
+			score++;
 			deleted.push_back(i);
 			std::fill(field[i].begin(), field[i].end(), PointState());
 		}
@@ -299,16 +310,23 @@ void GameScene::display(sf::RenderWindow &target) {
 	const float scoreTextScale = 0.85;
 	text.setFont(scoreFont);
 	text.setCharacterSize(scoreWndPlace.height * scoreTextScale);
-	text.setString("Score");
+	auto strScore { "Score: " + std::to_string(score) };
+	text.setString(strScore);
 	text.setFillColor(sf::Color::White);
 
 	target.draw(text);
 
 	auto blockSize { getBlockSize(gameWndPlace) };
 	auto blockScale { blockSize / blockTextureSize };
+	auto backScale { blockSize / backTextureSize };
 	sf::Sprite sprite;
 	sprite.setScale(blockScale, blockScale);
-	
+
+	sf::Sprite backSprite;
+	backSprite.setTexture(backTexture);
+	backSprite.setScale(backScale, backScale);
+
+	// Drawing figure
 	if (figure.exist)
 		for (size_t i = 0; i < figure.height; i++)
 			for (size_t j = 0; j < figure.width; j++)
@@ -321,8 +339,9 @@ void GameScene::display(sf::RenderWindow &target) {
 					target.draw(sprite);
 				}
 
+	// Drawing field
 	for (size_t i = 0; i < fieldLines; i++)
-		for (size_t j = 0; j < fieldColumns; j++)
+		for (size_t j = 0; j < fieldColumns; j++) {
 			if (field[i][j].isFilled) {
 				sprite.setPosition(
 					gameWndPlace.x + j * blockSize,
@@ -330,5 +349,20 @@ void GameScene::display(sf::RenderWindow &target) {
 				);
 				sprite.setTexture(blockTextures[field[i][j].texture]);
 				target.draw(sprite);
+				continue;
 			}
+			
+			if (figure.exist &&
+			    figure.x <= j && j < figure.x + figure.width &&
+			    figure.y <= i && i < figure.y + figure.height &&
+			    figure.points[i - figure.y][j - figure.x].isFilled)
+				continue;
+
+			// Drawing empty cells
+			backSprite.setPosition(
+				gameWndPlace.x + j * blockSize,
+				gameWndPlace.y + i * blockSize
+			);
+			target.draw(backSprite);
+		}
 }

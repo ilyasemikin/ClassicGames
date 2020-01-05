@@ -14,6 +14,10 @@ private:
 	size_t blockTextureSize;
 	std::vector<sf::Texture> blockTextures;
 	
+	std::string backTexturePath;
+	size_t backTextureSize;
+	sf::Texture backTexture;
+
 	std::string scoreFontPath;
 	sf::Font scoreFont;
 
@@ -39,6 +43,7 @@ private:
 	std::random_device rd;
 	std::mt19937 generator;
 
+	unsigned long long score;
 	// Score part of screen
 	float scorePart;
 

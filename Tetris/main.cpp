@@ -1,7 +1,7 @@
 #include "game.h"
 
 int main() {
-	Game game(sf::VideoMode(200, 400), "Tetris");
+	Game game("Configs/window");
 	game.run();
 	return 0;
 }

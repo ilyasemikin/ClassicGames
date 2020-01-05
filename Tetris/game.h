@@ -12,6 +12,7 @@ private:
 	float deltaTime;
 	std::stack<std::unique_ptr<Scene>> scenes;
 
+	void initWindowByFile(const std::string &path);
 	void initScenes();
 
 	void updateDeltaTime();
@@ -20,6 +21,7 @@ private:
 	void display();
 public:
 	Game();
+	Game(const std::string &configFile);
 	Game(sf::VideoMode vm, std::string title);
 	virtual ~Game();
 	void run();
