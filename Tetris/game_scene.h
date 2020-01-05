@@ -22,6 +22,7 @@ private:
 	std::vector<std::vector<std::vector<PointState>>> figures;
 	struct {
 		std::vector<std::vector<PointState>> points;
+		bool exist;
 		size_t x;
 		size_t y;
 		size_t width;
@@ -42,11 +43,13 @@ private:
 	void initFonts();
 	void initFigures();
 
+	bool figureCanPlaced(const std::vector<std::vector<PointState>> &points);
 	void generateFigure();
 	bool thereIsBarrier(Direction dir);
 	void moveFigure(Direction dir);
 	void fixFigure();
-	
+	void rotateFigure();
+
 	void clearFieldLines();
 
 	Rectangle getScoreWindowPlace(const sf::Vector2u &wndSize);

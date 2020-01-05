@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <list>
 #include "png_image.h"
+#include "matrix.h"
 #include "game_scene.h"
 
 GameScene::GameScene(size_t m, size_t n) : 
@@ -73,6 +74,20 @@ void GameScene::initFigures() {
 	);
 }
 
+bool GameScene::figureCanPlaced(const std::vector<std::vector<PointState>> &points) {
+	auto [width, height] { Matrix2::getSize(points) };
+	for (size_t i = 0; i < height; i++)
+		for (size_t j = 0; j < width; j++) {
+			auto x { figure.x + j };
+			auto y { figure.y + i };
+			if (x >= fieldColumns || y >= fieldLines)
+				return false;
+			else if (points[i][j].isFilled && field[y][x].isFilled)
+				return false;
+		}
+	return true;
+}
+
 void GameScene::generateFigure() {
 	figure.points = figures[0];
 	figure.x = 0;
@@ -80,6 +95,7 @@ void GameScene::generateFigure() {
 	figure.width = figure.points[0].size();
 	figure.height = figure.points.size();
 	figure.texture = 0;
+	figure.exist = figureCanPlaced(figure.points);
 }
 
 bool GameScene::thereIsBarrier(Direction dir) {
@@ -124,17 +140,17 @@ bool GameScene::thereIsBarrier(Direction dir) {
 void GameScene::moveFigure(Direction dir) {
 	switch (dir) {
 		case Direction::LEFT:
-			if (!thereIsBarrier(dir))
+			if (figure.exist && !thereIsBarrier(dir))
 				figure.x--;
 			break;
 		case Direction::RIGHT:
-			if (!thereIsBarrier(dir))
+			if (figure.exist && !thereIsBarrier(dir))
 				figure.x++;
 			break;
 		case Direction::DOWN:
 			if (!thereIsBarrier(dir))
 				figure.y++;
-			else {
+			else if (figure.exist) {
 				fixFigure();
 				clearFieldLines();
 				generateFigure();
@@ -153,6 +169,17 @@ void GameScene::fixFigure() {
 				field[iField][jField].texture = 2;
 			}
 		}
+}
+
+void GameScene::rotateFigure() {
+	std::vector<std::vector<PointState>> rotatePoints(figure.points);
+	Matrix2::rotate(rotatePoints, Matrix2::RotateDirection::COUNTER_CLOCKWISE);
+
+	if (figureCanPlaced(rotatePoints)) {
+		figure.points = rotatePoints;
+		figure.width = rotatePoints[0].size();
+		figure.height = rotatePoints.size();
+	}
 }
 
 void GameScene::clearFieldLines() {
@@ -219,6 +246,7 @@ void GameScene::printDebugInfo() {
 		std::cout << std::endl;
 	}
 	std::cout << "Figure:" << std::endl;
+	std::cout << "Exist = " << (figure.exist ? "true" : "false") << std::endl;
 	std::cout << "X = " << figure.x << "; y = " << figure.y << std::endl;
 	std::cout << "Width = " << figure.width << "; height = " << figure.height << std::endl;
 	for (size_t i = 0; i < figure.height; i++) {
@@ -235,6 +263,7 @@ bool GameScene::isOver() {
 void GameScene::handleKey(sf::Event::KeyEvent event) {
 	switch (event.code) {
 		case sf::Keyboard::Key::Up:
+			rotateFigure();
 			break;
 		case sf::Keyboard::Key::Down:
 			break;
@@ -247,12 +276,11 @@ void GameScene::handleKey(sf::Event::KeyEvent event) {
 		default:
 			break;
 	}
-	printDebugInfo();
 }
 
 void GameScene::update() {
 	static sf::Clock deltaClock;
-	const float latency = 0.2;
+	const float latency = 0.5;
 	if (deltaClock.getElapsedTime().asSeconds() > latency) {
 		moveFigure(Direction::DOWN);
 		deltaClock.restart();
@@ -276,17 +304,18 @@ void GameScene::display(sf::RenderWindow &target) {
 	auto blockScale { blockSize / blockTextureSize };
 	sf::Sprite sprite;
 	sprite.setScale(blockScale, blockScale);
-
-	for (size_t i = 0; i < figure.height; i++)
-		for (size_t j = 0; j < figure.width; j++)
-			if (figure.points[i][j].isFilled) {
-				sprite.setPosition(
-					gameWndPlace.x + (figure.x + j) * blockSize,
-					gameWndPlace.y + (figure.y + i) * blockSize
-				);
-				sprite.setTexture(blockTextures[figure.texture]);
-				target.draw(sprite);
-			}
+	
+	if (figure.exist)
+		for (size_t i = 0; i < figure.height; i++)
+			for (size_t j = 0; j < figure.width; j++)
+				if (figure.points[i][j].isFilled) {
+					sprite.setPosition(
+						gameWndPlace.x + (figure.x + j) * blockSize,
+						gameWndPlace.y + (figure.y + i) * blockSize
+					);
+					sprite.setTexture(blockTextures[figure.texture]);
+					target.draw(sprite);
+				}
 
 	for (size_t i = 0; i < fieldLines; i++)
 		for (size_t j = 0; j < fieldColumns; j++)
