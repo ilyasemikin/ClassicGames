@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <list>
 #include "png_image.h"
-#include "matrix.h"
 #include "game_scene.h"
 
 GameScene::GameScene(size_t m, size_t n) : 
@@ -11,6 +10,7 @@ GameScene::GameScene(size_t m, size_t n) :
 	fieldLines(m),
 	fieldColumns(n),
 	field(m, std::vector<PointState>(n, PointState())),
+	generator(rd()),
 	scorePart(0.05),
 	isSceneOver(false)
 {
@@ -89,12 +89,16 @@ bool GameScene::figureCanPlaced(const std::vector<std::vector<PointState>> &poin
 }
 
 void GameScene::generateFigure() {
-	figure.points = figures[0];
+	static std::uniform_int_distribution<size_t> distFigure(0, figures.size() - 1);
+	static std::uniform_int_distribution<size_t> distTexture(0, blockTextures.size() - 1);
+	auto figureIndex { distFigure(generator) };
+	auto textureIndex { distTexture(generator) };
+	figure.points = figures[figureIndex];
 	figure.x = 0;
 	figure.y = 0;
 	figure.width = figure.points[0].size();
 	figure.height = figure.points.size();
-	figure.texture = 0;
+	figure.texture = textureIndex;
 	figure.exist = figureCanPlaced(figure.points);
 }
 
@@ -166,14 +170,14 @@ void GameScene::fixFigure() {
 			auto iField { figure.y + i };
 			if (figure.points[i][j].isFilled) {
 				field[iField][jField].isFilled = true;
-				field[iField][jField].texture = 2;
+				field[iField][jField].texture = figure.texture;
 			}
 		}
 }
 
-void GameScene::rotateFigure() {
+void GameScene::rotateFigure(Matrix2::RotateDirection dir) {
 	std::vector<std::vector<PointState>> rotatePoints(figure.points);
-	Matrix2::rotate(rotatePoints, Matrix2::RotateDirection::COUNTER_CLOCKWISE);
+	Matrix2::rotate(rotatePoints, dir);
 
 	if (figureCanPlaced(rotatePoints)) {
 		figure.points = rotatePoints;
@@ -263,7 +267,7 @@ bool GameScene::isOver() {
 void GameScene::handleKey(sf::Event::KeyEvent event) {
 	switch (event.code) {
 		case sf::Keyboard::Key::Up:
-			rotateFigure();
+			rotateFigure(Matrix2::RotateDirection::CLOCKWISE);
 			break;
 		case sf::Keyboard::Key::Down:
 			break;
@@ -280,7 +284,7 @@ void GameScene::handleKey(sf::Event::KeyEvent event) {
 
 void GameScene::update() {
 	static sf::Clock deltaClock;
-	const float latency = 0.5;
+	const float latency = 0.25;
 	if (deltaClock.getElapsedTime().asSeconds() > latency) {
 		moveFigure(Direction::DOWN);
 		deltaClock.restart();

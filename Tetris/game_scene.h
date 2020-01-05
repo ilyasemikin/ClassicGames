@@ -1,10 +1,12 @@
 #pragma once
 
+#include <random>
 #include <vector>
 #include <SFML/Graphics.hpp>
 #include "scene.h"
 #include "point_state.h"
 #include "rectangle.h"
+#include "matrix.h"
 
 class GameScene : public Scene {
 private:
@@ -34,6 +36,9 @@ private:
 		LEFT, RIGHT, DOWN
 	};
 
+	std::random_device rd;
+	std::mt19937 generator;
+
 	// Score part of screen
 	float scorePart;
 
@@ -42,13 +47,14 @@ private:
 	void initTextures();
 	void initFonts();
 	void initFigures();
+	void initGenerators();
 
 	bool figureCanPlaced(const std::vector<std::vector<PointState>> &points);
 	void generateFigure();
 	bool thereIsBarrier(Direction dir);
 	void moveFigure(Direction dir);
 	void fixFigure();
-	void rotateFigure();
+	void rotateFigure(Matrix2::RotateDirection dir);
 
 	void clearFieldLines();
 
