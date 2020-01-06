@@ -3,8 +3,6 @@
 #include <SFML/Graphics.hpp>
 
 class Scene {
-protected:
-
 public:
 	virtual bool isOver() = 0;
 

@@ -9,7 +9,7 @@ Game::Game() : Game(sf::VideoMode(800, 600), "window") {
 
 Game::Game(const std::string &configFile) {
 	initScenes();
-	initWindowByFile(configFile);
+	loadConfigFromFile(configFile);
 }
 
 Game::Game(sf::VideoMode vm, std::string title) : 
@@ -22,24 +22,17 @@ Game::~Game() {
 
 }
 
-void Game::initWindowByFile(const std::string &path) {
+void Game::loadConfigFromFile(const std::string &path) {
 	auto params {
 		Config::getListParams(path, { "Width", "Height", "Title" })
 	};
-	size_t width, height;
-	std::stringstream str;
-	str << params["Width"];
-	str >> width;
-	str.clear();
-
-	str << params["Height"];
-	str >> height;
-
+	auto width { Config::getParam<size_t>(params["Width"]) };
+	auto height { Config::getParam<size_t>(params["Height"]) };
 	window.create(sf::VideoMode(width, height, sf::Style::Close | sf::Style::Titlebar), params["Title"]);
 }
 
 void Game::initScenes() {
-	scenes.push(std::make_unique<GameScene>(15, 7));
+	scenes.push(std::make_unique<GameScene>("Configs/game", "Configs/figures"));
 }
 
 void Game::updateDeltaTime() {

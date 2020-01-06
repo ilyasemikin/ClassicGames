@@ -12,7 +12,8 @@ private:
 	float deltaTime;
 	std::stack<std::unique_ptr<Scene>> scenes;
 
-	void initWindowByFile(const std::string &path);
+	void loadConfigFromFile(const std::string &path);
+	
 	void initScenes();
 
 	void updateDeltaTime();

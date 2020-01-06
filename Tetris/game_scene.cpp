@@ -1,33 +1,89 @@
-#include <iostream>
 #include <algorithm>
+#include <fstream>
+#include <iostream>
 #include <list>
+#include "config_parser.h"
 #include "png_image.h"
+#include "string_operations.h"
 #include "game_scene.h"
 
-GameScene::GameScene(size_t m, size_t n) : 
-	blockTexturePath("Textures/blocks.png"),
-	backTexturePath("Textures/back.png"),
-	scoreFontPath("Fonts/Roboto-Black.ttf"),
+GameScene::GameScene(const std::string &configFile, const std::string &figuresFile) :
+	generator(rd())
+{
+	loadConfigFromFile(configFile);
+	loadFiguresFormFile(figuresFile);
+
+	initGame();
+}
+
+GameScene::GameScene(size_t m, size_t n, const std::string &figuresFile) : 
 	fieldLines(m),
 	fieldColumns(n),
 	field(m, std::vector<PointState>(n, PointState())),
 	generator(rd()),
-	score(0),
-	scorePart(0.05),
-	isSceneOver(false)
+	latency(0.4)
 {
-	initTextures();
-	initFonts();
-	initFigures();
+	loadConfigFromFile(figuresFile);
 
-	generateFigure();
+	initGame();
 }
 
 GameScene::~GameScene() {
 
 }
 
+void GameScene::loadConfigFromFile(const std::string &path) {
+	auto params {
+		Config::getListParams(path, { "FieldWidth", "FieldHeight", "Latency" } )
+	};
+	auto width { Config::getParam<size_t>(params["FieldWidth"]) };
+	auto height { Config::getParam<size_t>(params["FieldHeight"]) };
+	latency = Config::getParam<float>(params["Latency"]);
+
+	fieldLines = height;
+	fieldColumns = width;
+	
+	field = std::vector<std::vector<PointState>>(
+		fieldLines, std::vector<PointState>(fieldColumns)
+	);
+}
+
+void GameScene::loadFiguresFormFile(const std::string &path) {
+	std::ifstream input(path);
+	std::string line;
+	while(std::getline(input, line)) {
+		if (line.length() == 0 || line[0] == '#')
+			continue;
+		auto lines { StringOperations::Split(line, " ") };
+		std::vector<std::vector<PointState>> figure (
+			lines.size(), 
+			std::vector<PointState>(lines[0].size(), PointState())
+		);
+		for (size_t i = 0; i < lines.size(); i++)
+			for (size_t j = 0; j < lines[0].size(); j++)
+				if (lines[i][j] != '0')
+					figure[i][j].isFilled = true;
+		figures.push_back(figure);
+	}
+}
+
+void GameScene::initGame() {
+	score = 0;
+	scorePart = 0.05;
+
+	isSceneOver = false;
+
+	initTextures();
+	initFonts();
+
+	generateFigure();
+}
+
 void GameScene::initTextures() {
+	blockTexturePath = "Textures/blocks.png";
+	backTexturePath = "Textures/back.png";
+	
+	// Load block textures
 	auto textureSize { PNGImage::getSize(blockTexturePath) };
 	
 	if (textureSize.width == 0 || textureSize.height == 0)
@@ -59,6 +115,7 @@ void GameScene::initTextures() {
 		}
 	}
 
+	// Load background texture
 	textureSize = PNGImage::getSize(backTexturePath);
 
 	if (textureSize.width == 0 || textureSize.height == 0)
@@ -69,19 +126,22 @@ void GameScene::initTextures() {
 }
 
 void GameScene::initFonts() {
+	scoreFontPath = "Fonts/Roboto-Black.ttf";
 	if (!scoreFont.loadFromFile(scoreFontPath)) {
 		std::cerr << "" << std::endl;
 		throw "";
 	}
 }
 
-void GameScene::initFigures() {
-	figures.push_back(
-		{ 
-			{ 0, 1, 0 },
-			{ 1, 1, 1 }
-		}
-	);
+std::vector<size_t> GameScene::getFigureBottonBorder() {
+	std::vector<size_t> ret(figure.width);
+	for (size_t j = 0; j < figure.width; j++) {
+		size_t i = figure.height - 1;
+		while (!figure.points[i][j].isFilled)
+			i--;
+		ret[j] = i;
+	}
+	return ret;
 }
 
 bool GameScene::figureCanPlaced(const std::vector<std::vector<PointState>> &points) {
@@ -104,10 +164,10 @@ void GameScene::generateFigure() {
 	auto figureIndex { distFigure(generator) };
 	auto textureIndex { distTexture(generator) };
 	figure.points = figures[figureIndex];
-	figure.x = 0;
-	figure.y = 0;
 	figure.width = figure.points[0].size();
 	figure.height = figure.points.size();
+	figure.x = fieldColumns / 2 - figure.width / 2;
+	figure.y = 0;
 	figure.texture = textureIndex;
 	figure.exist = figureCanPlaced(figure.points);
 }
@@ -173,6 +233,36 @@ void GameScene::moveFigure(Direction dir) {
 	}
 }
 
+void GameScene::dropFigure() {
+	if (figure.exist) {
+		auto border { getFigureBottonBorder() };
+		size_t offset = 0;
+		auto check {
+			[&](const std::vector<std::vector<PointState>> &points, const std::vector<size_t> &borders, size_t i0, size_t j0) {
+				auto [width, height] { Matrix2::getSize(points) };
+				for (size_t j = 0; j < borders.size(); j++) {
+					size_t x = j + j0;
+					size_t y = borders[j] + i0;
+					if (x >= width || y + 1 >= height)
+						return false;
+					if (points[y + 1][x].isFilled)
+						return false;
+				}
+				return true;
+			}
+		};
+
+		while (check(field, border, figure.y + offset, figure.x))
+			offset++;
+
+		figure.y += offset;
+
+		fixFigure();
+		clearFieldLines();
+		generateFigure();
+	}
+}
+
 void GameScene::fixFigure() {
 	for (size_t i = 0; i < figure.height; i++)
 		for (size_t j = 0; j < figure.width; j++) {
@@ -208,6 +298,7 @@ void GameScene::clearFieldLines() {
 		}
 	}
 
+	// TODO: redo further
 	for (auto &line : deleted) {
 		for (size_t i = line; i > 0; i--)
 			field[i] = field[i - 1];
@@ -281,6 +372,7 @@ void GameScene::handleKey(sf::Event::KeyEvent event) {
 			rotateFigure(Matrix2::RotateDirection::CLOCKWISE);
 			break;
 		case sf::Keyboard::Key::Down:
+			dropFigure();
 			break;
 		case sf::Keyboard::Key::Right:
 			moveFigure(Direction::RIGHT);
@@ -295,7 +387,6 @@ void GameScene::handleKey(sf::Event::KeyEvent event) {
 
 void GameScene::update() {
 	static sf::Clock deltaClock;
-	const float latency = 0.25;
 	if (deltaClock.getElapsedTime().asSeconds() > latency) {
 		moveFigure(Direction::DOWN);
 		deltaClock.restart();
