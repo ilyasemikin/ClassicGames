@@ -1,3 +1,5 @@
+#include "main_menu_state.h"
+#include "state.h"
 #include "game.h"
 
 Game::Game(size_t width, size_t height, const std::string &title) {
@@ -7,6 +9,8 @@ Game::Game(size_t width, size_t height, const std::string &title) {
 		title,
 		sf::Style::Titlebar | sf::Style::Close
 	);
+
+	_data->machine.addState(StateRef(new MainMenuState(_data)));
 
 	deltaTime = 1.0f / 60;
 }

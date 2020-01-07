@@ -6,9 +6,6 @@ void AssetManager::loadTexture(const std::string &name, const std::string &path)
 	if (!texture.loadFromFile(path))
 		throw;
 
-	if (_textures.find(name) != _textures.end())
-		throw;
-
 	_textures[name] = texture;
 }
 
@@ -30,9 +27,6 @@ void AssetManager::loadFont(const std::string &name, const std::string &path) {
 	if (!font.loadFromFile(path))
 		throw;
 	
-	if (_fonts.find(path) != _fonts.end())
-		throw;
-
 	_fonts[name] = font;
 }
 
