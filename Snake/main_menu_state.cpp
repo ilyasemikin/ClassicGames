@@ -1,4 +1,5 @@
 #include "game_state.h"
+#include "settings.h"
 #include "state.h"
 #include "main_menu_state.h"
 
@@ -60,7 +61,7 @@ void MainMenuState::init() {
 	_quitButton.setFillColor(sf::Color::White);
 	_quitButton.setString("Quit");
 	_quitButton.setCharacterSize(24);
-	auto quitButtonSize { _quitButton.getLocalBounds() };
+	auto quitButtonSize { _quitButton.getGlobalBounds() };
 	_quitButton.setPosition(
 		butsSpaceRect.width / 2 - quitButtonSize.width / 2,
 		butsSpaceRect.height / 2 - quitButtonSize.height / 2 + 20
@@ -81,7 +82,9 @@ void MainMenuState::handleInput() {
 	}
 
 	if (_data->input.isClicked(_playButton, sf::Mouse::Left, _data->window))
-		_data->machine.addState(StateRef(new GameState(_data, 32, 60)));
+		_data->machine.addState(StateRef(new GameState(
+					_data, Settings::FieldWidth, Settings::FieldHeight
+		)));
 	if (_data->input.isClicked(_quitButton, sf::Mouse::Left, _data->window))
 		_data->window.close();
 }

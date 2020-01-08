@@ -1,7 +1,8 @@
 #include "game.h"
+#include "settings.h"
 
 int main() {
-	Game game(300, 600, "Snake");
+	Game game(Settings::WindowWidth, Settings::WindowHeight, Settings::WindowTitle);
 	game.run();
 	return 0;
 }

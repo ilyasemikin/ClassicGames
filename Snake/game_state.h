@@ -1,6 +1,7 @@
 #pragma once
 
 #include <list>
+#include <random>
 #include <SFML/Graphics.hpp>
 #include "game_data.h"
 #include "rectangle.h"
@@ -14,6 +15,10 @@ private:
 	sf::RectangleShape _fieldBoundary;
 	sf::RectangleShape _oddEmptyCell;
 	sf::RectangleShape _evenEmptyCell;
+	sf::RectangleShape _fruitCell;
+
+	std::random_device _rd;
+	std::mt19937 _generator;
 
 	struct {
 		Rectangle topRect;
@@ -39,7 +44,10 @@ private:
 		sf::Vector2u head;
 		std::list<sf::Vector2u> points;
 		Direction direction;
+		Direction newDirection;
 	} _snake;
+
+	sf::Vector2u _fruit;
 
 	size_t _scoreValue;
 
@@ -47,6 +55,9 @@ private:
 	Rectangle getMainRect();
 
 	float getBlockSize();
+	std::pair<float, float> getBlockPosition(size_t x, size_t y);
+
+	void generateFruit();
 
 	bool isGameOver();
 	sf::Vector2u getNewHead();
@@ -55,6 +66,7 @@ private:
 
 	void updateDeltaTime();
 
+	void drawFruit();
 	void drawScore();
 	void drawField();
 	void drawSnake();
