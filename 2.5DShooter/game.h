@@ -5,7 +5,6 @@
 #include <SFML/Graphics.hpp>
 #include "asset_manager.h"
 #include "game_data.h"
-#include "input_manager.h"
 #include "state_machine.h"
 
 class Game {
