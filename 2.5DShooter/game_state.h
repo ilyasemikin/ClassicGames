@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include "array2d.h"
 #include "game_data.h"
 #include "game_map_objects.h"
@@ -17,14 +18,16 @@ private:
 		float x;
 		float y;
 		float angle;
+		const float fov = 3.14 / 3;
 	} _player;
 
 	GameDataRef _data;
 
 	Array2d<GameMapObjects> _map;
 
-	std::pair<float, float> _calcNearestWall();
-	void _drawMap();
+	std::pair<size_t, size_t> _getGameScreenSize();
+	std::tuple<float, float, float> _calcNearestWall(float angle);
+	void _draw();
 public:
 	GameState(GameDataRef data);
 	virtual ~GameState() {}

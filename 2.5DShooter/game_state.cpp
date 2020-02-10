@@ -7,6 +7,7 @@
 GameState::GameState(GameDataRef data) : _data(data), _map(_mapSize, _mapSize, GameMapObjects::WALL) {
 	const std::vector<std::pair<size_t, size_t>> wallDots {
 		{ 1, 1 }, { 1, 2 }, { 1, 3 },
+		{ 2, 1 }, { 2, 2 }, { 2, 3 }
 	};
 
 	_player.x = 1.5;
@@ -19,17 +20,22 @@ GameState::GameState(GameDataRef data) : _data(data), _map(_mapSize, _mapSize, G
 	}
 }
 
-std::pair<float, float> GameState::_calcNearestWall() {
-	for (float t = 0; t < _mapSize; t += 0.05) {
-		float cx = _player.x + t * std::cos(_player.angle);
-		float cy = _player.y + t * std::sin(_player.angle);
-		if (_map(int(cx), int(cy)) == GameMapObjects::WALL)
-			return std::pair(cx, cy);
-	}
-	return std::pair(0, 0);
+std::pair<size_t, size_t> GameState::_getGameScreenSize() {
+	auto screenSize { _data->window.getSize() };
+	return std::pair(screenSize.x - _mainScreenOffset, screenSize.y);
 }
 
-void GameState::_drawMap() {
+std::tuple<float, float, float> GameState::_calcNearestWall(float angle) {
+	for (float t = 0; t < _mapSize; t += 0.01) {
+		float cx = _player.x + t * std::cos(angle);
+		float cy = _player.y + t * std::sin(angle);
+		if (_map(int(cx), int(cy)) == GameMapObjects::WALL)
+			return std::tuple(cx, cy, t);
+	}
+	return std::tuple(0, 0, 0);
+}
+
+void GameState::_draw() {
 	sf::RectangleShape rect;
 	rect.setSize(sf::Vector2f(_mapBlockSize, _mapBlockSize));
 	rect.setFillColor(sf::Color::White);
@@ -40,13 +46,27 @@ void GameState::_drawMap() {
 				rect.setPosition(i * _mapBlockSize, j * _mapBlockSize);
 				_data->window.draw(rect);
 			}
-	auto [cx, cy] { _calcNearestWall() };
 
-	sf::VertexArray line(sf::Lines, 2);
-	line[0].position = sf::Vector2f(_player.x * _mapBlockSize, _player.y * _mapBlockSize);
-	line[1].position = sf::Vector2f(cx * _mapBlockSize, cy * _mapBlockSize);
-	line[0].color = line[1].color = sf::Color::Yellow;
-	_data->window.draw(line);
+	auto [width, height] { _getGameScreenSize() };
+	for (size_t i = 0; i < width; i++) {
+		float angle = _player.angle - _player.fov / 2 + _player.fov * i / float(width);
+		auto [cx, cy, c] { _calcNearestWall(angle) };
+
+		sf::VertexArray line(sf::Lines, 2);
+		line[0].position = sf::Vector2f(_player.x * _mapBlockSize, _player.y * _mapBlockSize);
+		line[1].position = sf::Vector2f(cx * _mapBlockSize, cy * _mapBlockSize);
+		line[0].color = line[1].color = sf::Color::Yellow;
+		_data->window.draw(line);
+
+		std::cout << cx  << " " << cy << " " << c << std::endl;
+
+		float wallHeight = height / (c * std::cos(angle - _player.angle));
+
+		line[0].position = sf::Vector2f(_mainScreenOffset + i, height / 2 - wallHeight / 2);
+		line[1].position = sf::Vector2f(_mainScreenOffset + i, height / 2 + wallHeight / 2);
+		line[0].color = line[1].color = sf::Color::Green;
+		_data->window.draw(line);
+	}
 }
 
 void GameState::init() {
@@ -61,8 +81,10 @@ void GameState::handleInput() {
 				_data->window.close();
 				break;
 			case sf::Event::KeyPressed:
-				if (event.key.code == sf::Keyboard::Down)
-					_player.angle = (_player.angle > 360) ? 0 : _player.angle + 0.05; 
+				if (event.key.code == sf::Keyboard::Right)
+					_player.angle = (_player.angle > 2 * 3.14) ? 0 : _player.angle + 3.14 / 100;
+				else if (event.key.code == sf::Keyboard::Left)
+					_player.angle = (_player.angle < 0) ? 2 * 3.14 : _player.angle - 3.14 / 100;
 				break;
 			default:
 				break;
@@ -77,7 +99,7 @@ void GameState::update(float dt) {
 void GameState::draw(float dt) {
 	_data->window.clear();
 
-	_drawMap();
+	_draw();
 
 	_data->window.display();
 }
