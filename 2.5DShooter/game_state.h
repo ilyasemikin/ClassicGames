@@ -1,5 +1,6 @@
 #pragma once
 
+#define _USE_MATH_DEFINES
 #include <cmath>
 #include "array2d.h"
 #include "game_data.h"
@@ -8,22 +9,26 @@
 
 class GameState final : public State {
 private:
-	const size_t _mapSize = 10;
+	struct {
+		const size_t size = 10;
+		const size_t blockSize = 15;
+	} _mapProperties;
 
-	const size_t _mapBlockSize = 15;
-
-	const size_t _mainScreenOffset = _mapSize * _mapBlockSize;
+	const size_t _mainScreenOffset = _mapProperties.size * _mapProperties.blockSize;
 
 	struct {
 		float x;
 		float y;
 		float angle;
-		const float fov = 3.14 / 3;
+		const float fov = M_PI / 3;
 	} _player;
 
 	GameDataRef _data;
 
 	Array2d<GameMapObjects> _map;
+
+	void _rotatePlayer(float angle);
+	void _movePlayer(float c);
 
 	std::pair<size_t, size_t> _getGameScreenSize();
 	std::tuple<float, float, float> _calcNearestWall(float angle);
