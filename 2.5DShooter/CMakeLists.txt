@@ -11,7 +11,9 @@ add_executable(Shooter
 	game_state.cpp
 	main.cpp
 	main_menu_state.cpp
+	map_manager.cpp
 	state_machine.cpp
+	string_operations.cpp
 )
 
 find_package(SFML 2.5 REQUIRED graphics)
