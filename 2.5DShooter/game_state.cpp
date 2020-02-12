@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include <cmath>
 #include <utility>
 #include "game_state.h"
@@ -15,13 +17,14 @@ void GameState::_rotatePlayer(float angle) {
 }
 
 void GameState::_movePlayer(float c) {
-	auto x { _player.x + c * std::cos(_player.angle) };
-	auto y { _player.y + c * std::sin(_player.angle) };
+	auto x = _player.x + c * std::cos(_player.angle);
+	auto y = _player.y + c * std::sin(_player.angle);
+	if (x < 0 || y < 0 || x >= _map.getN() || y >= _map.getM())
+		return;
 	if (_map(int(x), int(y)) == GameMapObjects::EMPTY) {
 		_player.x = x;
 		_player.y = y;
 	}
-
 }
 
 size_t GameState::_getMainScreenOffset() {
@@ -35,9 +38,12 @@ std::pair<size_t, size_t> GameState::_getGameScreenSize() {
 
 std::tuple<float, float, float> GameState::_calcNearestWall(float angle) {
 	float t = 0;
+	const float step = 0.01;
 	float cx = _player.x;
 	float cy = _player.y;
-	for (; t < _map.getN(); t += 0.01) {
+	for (; t < _map.getN(); t += step) {
+		if (cx < 0 || cx >= _map.getM() || cy < 0 || cy >= _map.getN())
+			break;
 		cx = _player.x + t * std::cos(angle);
 		cy = _player.y + t * std::sin(angle);
 		if (_map(int(cx), int(cy)) == GameMapObjects::WALL)
