@@ -21,6 +21,13 @@ private:
 		const float fov = M_PI / 3;
 	} _player;
 
+	struct {
+		bool up;
+		bool down;
+		bool right;
+		bool left;
+	} _buttonPressed;
+
 	GameDataRef _data;
 
 	Array2d<GameMapObjects> _map;

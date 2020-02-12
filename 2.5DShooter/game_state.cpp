@@ -24,7 +24,6 @@ void GameState::_movePlayer(float c) {
 
 }
 
-
 size_t GameState::_getMainScreenOffset() {
 	return _mapBlockSize * _map.getN();
 }
@@ -84,12 +83,28 @@ void GameState::init() {
 	_player.y = 1.5;
 	_player.angle = 0;
 
+	_buttonPressed.up = false;
+	_buttonPressed.down = false;
+	_buttonPressed.right = false;
+	_buttonPressed.left = false;
+
 	_mapManager.loadMap("First", "third.map");
 
 	_map = _mapManager.getMap("First");
 }
 
 void GameState::handleInput() {
+	const std::map<sf::Keyboard::Key, bool &> keyButtonsPressed {
+		{ sf::Keyboard::Up, 	_buttonPressed.up },
+		{ sf::Keyboard::W, 	_buttonPressed.up },
+		{ sf::Keyboard::Down, 	_buttonPressed.down },
+		{ sf::Keyboard::S,	_buttonPressed.down },
+		{ sf::Keyboard::Right, 	_buttonPressed.right },
+		{ sf::Keyboard::D,	_buttonPressed.right },
+		{ sf::Keyboard::Left, 	_buttonPressed.left },
+		{ sf::Keyboard::A,	_buttonPressed.left }
+	};
+	
 	sf::Event event;
 	while (_data->window.pollEvent(event)) {
 		switch (event.type) {
@@ -97,15 +112,19 @@ void GameState::handleInput() {
 				_data->window.close();
 				break;
 			case sf::Event::KeyPressed:
-				if (event.key.code == sf::Keyboard::Right)
-					_rotatePlayer(M_PI / 50);
-				else if (event.key.code == sf::Keyboard::Left)
-					_rotatePlayer(-M_PI / 50);
-				else if (event.key.code == sf::Keyboard::Up)
-					_movePlayer(0.1);
-				else if (event.key.code == sf::Keyboard::Down) 
-					_movePlayer(-0.1);
-				break;
+				{
+					auto finded { keyButtonsPressed.find(event.key.code) };
+					if (finded != keyButtonsPressed.end())
+						finded->second = true;
+					break;
+				}
+			case sf::Event::KeyReleased:
+				{
+					auto finded { keyButtonsPressed.find(event.key.code) };
+					if (finded != keyButtonsPressed.end())
+						finded->second = false;
+					break;
+				}
 			default:
 				break;
 		}
@@ -113,7 +132,14 @@ void GameState::handleInput() {
 }
 
 void GameState::update(float dt) {
-
+	if (_buttonPressed.up)
+		_movePlayer(0.05);
+	if (_buttonPressed.down)
+		_movePlayer(-0.05);
+	if (_buttonPressed.right)
+		_rotatePlayer(M_PI / 200);
+	if (_buttonPressed.left)
+		_rotatePlayer(-M_PI / 200);
 }
 
 void GameState::draw(float dt) {
